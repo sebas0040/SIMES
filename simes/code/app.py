@@ -8,9 +8,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from eventos import FrameEvento
 from database import DataBase
-
-
-
 class MainWindow(QMainWindow,MW):#Creacion de main Window
     def __init__(self):
         self.mensaje = QMessageBox()
