@@ -1,12 +1,13 @@
 #importacion del modulo
-import psycopg2
+import psycopg2,os,sys
 class DataBase():
+    
     def __init__(self) -> None:
         # Conexion a base de datos
-        print('esto si se ejecuta')
         self.conn = psycopg2.connect(user='postgres', password = 'POSTGRES1',host='127.0.0.1', port='5432', database='db_Simes')
         # Utilizar cursor
         self.cur = self.conn.cursor()
+        self.llenar_base_datos_usuario()
 
     def __del__(self):
         # Cerrar el cursor y la conexión
@@ -60,4 +61,16 @@ class DataBase():
         datos=(cedula,tipocc,3,nombre.capitalize(),apellido.capitalize(),correo.lower(),contra)
         self.cur.execute(consulta,datos)
         self.conn.commit()
+        
+    def llenar_base_datos_usuario(self):
+        ruta = os.path.dirname(os.path.dirname(__file__))
+        ruta = ruta + '\\script_db_Simes\\Usuarios.csv'
+        datos = f'''copy usuarios(nomusuario,apelliusuario,ccusuario,correo,contrasena) from '{ruta}'
+        with (delimiter '|',header,encoding'UTF-8',format'csv' )'''
+        self.cur.execute(datos)
+        print('parece que se llenaron los datos')
+        self.cur.execute('select nomusuario from usuarios')
+        datos = self.cur.fetchall()
+        for i in datos:
+            print(i)
 
