@@ -6,8 +6,12 @@ class DataBase():
         # Conexion a base de datos
         self.conn = psycopg2.connect(user='postgres', password = 'POSTGRES1',host='127.0.0.1', port='5432', database='db_Simes')
         # Utilizar cursor
+        self.dir_simes = os.path.dirname(os.path.dirname(__file__)) # Es la ruta del directorio simes
+                                                                    # se usa para aceder a los archivos de todo el programa
+                                                                    # sin complicaciones de importación 
         self.cur = self.conn.cursor()
-        self.llenar_base_datos_usuario()
+        self.llenar_base_datos_usuario() # se inicializa para tener Usuarios en el programa
+            
 
     def __del__(self):
         # Cerrar el cursor y la conexión
@@ -63,8 +67,13 @@ class DataBase():
         self.conn.commit()
         
     def llenar_base_datos_usuario(self):
-        ruta = os.path.dirname(os.path.dirname(__file__))
-        ruta = ruta + '\\script_db_Simes\\Usuarios.csv'
+        self.crear_tabla_usuarios()
+        self.cargar_usuarios()
+        self.obtener_usuarios()
+        
+    def cargar_usuarios(self):
+        '''Este metodo carga la tabla usuarios del script Usuarios.csv'''
+        ruta = self.dir_simes + '\\script_db_Simes\\Usuarios.csv'
         datos = f'''copy usuarios(nomusuario,apelliusuario,ccusuario,correo,contrasena) from '{ruta}'
         with (delimiter '|',header,encoding'UTF-8',format'csv' )'''
         self.cur.execute(datos)
@@ -73,4 +82,33 @@ class DataBase():
         datos = self.cur.fetchall()
         for i in datos:
             print(i)
+        print(type(datos))
 
+    def crear_tabla_usuarios(self):
+        '''Este metodo elimina en el caso de que se haya creado una tabla antes 
+        y vuelve a crear la tabla Usuarios'''
+        ruta = self.dir_simes + '\\script_db_Simes\\tabla_usuarios.sql'
+        with open(ruta,"r") as tabla:
+            lectura = tabla.read()
+        self.cur.execute("drop table usuarios")
+        self.cur.execute(lectura)
+    
+    def obtener_usuarios(self):
+        self.cur.execute("select * from usuarios")
+        lista = self.cur.fetchall()
+        for i in lista :
+            print(i)
+            
+    def escribir_usuario(self,nombre, apellido, cedula, correo, contraseña, foto = None):
+        '''Este metodo permite añadir un usuario a la ves, los parametro que se
+        deben pasar al metodo son nombre, apellido, cedula, correo y contraseña,
+        la ruta de la foto es opcional'''
+        # PRIMERO SE AÑADE EL NUEVO USUARIO A LA BASE DE DATOS 
+        us = f"insert into usuarios (nomusuario,apelliusuario,ccusuario,correo,contrasena,foto) values ('{nombre}','{apellido}','{cedula}','{correo}','{contraseña}','{foto}')"
+        self.cur.execute(us)
+        self.obtener_usuarios()
+        # AHORA SE AÑADE EL USUARIO A EL SCRIPT PARA QUE APAREZCA EN LA BASE DE DATOS
+        us = f"\n{nombre}|{apellido}|{cedula}|{correo}|{contraseña}|{foto}"
+        ruta_us = self.dir_simes + '\\script_db_Simes\\Usuarios.csv'
+        with open(ruta_us,'a') as escribir:
+            escribir.write(us)
